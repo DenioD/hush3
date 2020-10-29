@@ -1,7 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Distributed under the GPLv3 software license, see the accompanying
+// file COPYING or https://www.gnu.org/licenses/gpl-3.0.en.html
 
 /******************************************************************************
  * Copyright © 2014-2019 The SuperNET Developers.                             *
@@ -193,9 +193,10 @@ unsigned int base_uint<BITS>::bits() const
 {
     for (int pos = WIDTH - 1; pos >= 0; pos--) {
         if (pn[pos]) {
-            for (int bits = 31; bits > 0; bits--) {
-                if (pn[pos] & 1 << bits)
+            for (size_t bits = 31; bits > 0; bits--) {
+                if (pn[pos] & (1U << bits)) {
                     return 32 * pos + bits + 1;
+				}
             }
             return 32 * pos + 1;
         }

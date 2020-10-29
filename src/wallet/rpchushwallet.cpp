@@ -1,7 +1,7 @@
-// Copyright (c) 2020 The Hush developers
+// Copyright (c) 2019-2020 The Hush developers
 // Copyright (c) 2019 Cryptoforge
-// Distributed under the MIT software license, see the accompanying
-// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+// Distributed under the GPLv3 software license, see the accompanying
+// file COPYING or https://www.gnu.org/licenses/gpl-3.0.en.html
 
 #include "init.h"
 #include "key_io.h"
@@ -134,6 +134,9 @@ void zsTxSpendsToJSON(const CWalletTx& wtx, UniValue& spends, CAmount& totalSpen
 
 void zsTxReceivedToJSON(const CWalletTx& wtx, UniValue& received, CAmount& totalReceived, const std::string& strAddress, bool filterByAddress) {
 
+  if(fZdebug)
+    fprintf(stderr,"%s: txid=%s\n", __func__, wtx.GetHash().ToString().c_str() );
+
   LOCK2(cs_main, pwalletMain->cs_wallet);
 
   //Check address
@@ -199,8 +202,19 @@ void zsTxReceivedToJSON(const CWalletTx& wtx, UniValue& received, CAmount& total
 
           if (pt) {
             auto note = pt.get();
+            auto pt_unwrapped = pt.get();
+            auto memo = pt_unwrapped.memo();
             obj.push_back(Pair("address",EncodePaymentAddress(addr)));
             obj.push_back(Pair("amount", ValueFromAmount(CAmount(note.value()))));
+            obj.push_back(Pair("memo", HexStr(memo)));
+
+              if (memo[0] <= 0xf4) {
+                  auto end = std::find_if(memo.rbegin(), memo.rend(), [](unsigned char v) { return v != 0; });
+                  std::string memoStr(memo.begin(), end.base());
+                if (utf8::is_valid(memoStr)) {
+                obj.push_back(Pair("memoStr", memoStr));
+            }
+        }
             obj.push_back(Pair("shieldedOutputIndex",i));
 
             //Check Change Status
@@ -401,6 +415,10 @@ void zsWalletTxJSON(const CWalletTx& wtx, UniValue& ret, const std::string strAd
 
   //Begin Compiling the Decrypted Transaction
   tx.push_back(Pair("txid", wtx.GetHash().ToString()));
+
+  if(fZdebug)
+    fprintf(stderr,"%s: txid=%s\n", __func__, wtx.GetHash().ToString().c_str() );
+
   if (wtx.IsCoinBase())
   {
       tx.push_back(Pair("coinbase", true));
